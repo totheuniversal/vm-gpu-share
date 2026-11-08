@@ -4,6 +4,8 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>net10.0-windows</TargetFramework>
     <RootNamespace>VM_Manager</RootNamespace>
+    <!-- Name of the .exe; the code namespace keeps the original project name -->
+    <AssemblyName>VM GPU Share</AssemblyName>
     <Nullable>enable</Nullable>
     <UseWPF>true</UseWPF>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -12,9 +14,9 @@
     <!-- Application.ThemeMode (built-in Fluent theme) is still marked experimental -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
 
-    <Version>1.0.1</Version>
-    <Product>VM Manager</Product>
-    <Description>Manage Hyper-V VMs with a shared NVIDIA GPU</Description>
+    <Version>1.1.0</Version>
+    <Product>VM GPU Share</Product>
+    <Description>Share your NVIDIA GPU with Hyper-V virtual machines</Description>
     <Copyright>totheuniversal</Copyright>
   </PropertyGroup>
 

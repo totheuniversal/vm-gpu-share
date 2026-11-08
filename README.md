@@ -1,9 +1,9 @@
-# VM Manager
+# VM GPU Share
 
-A Windows desktop app for running Hyper-V virtual machines with a **shared NVIDIA GPU** (GPU partitioning, GPU-P).
+**Share your NVIDIA GPU with Hyper-V virtual machines.** A Windows desktop app that sets up GPU partitioning (GPU-P) for your VMs, copies the NVIDIA driver into them and keeps it up to date. Formerly named *VM Manager*.
 Built with WPF on .NET 10 and its Fluent 2 theme: light and dark mode follow Windows.
 
-![VM Manager showing a running VM with live stats and GPU sharing](docs/screenshot.png)
+![VM GPU Share showing a running VM with live stats and GPU sharing](docs/screenshot.png)
 
 ## Features
 
@@ -52,7 +52,7 @@ Inside the VM, Device Manager lists the shared GPU next to Hyper-V's own display
 
 ## Getting started
 
-**In short:** install Windows in a Hyper-V VM first, then run VM Manager to set up GPU sharing.
+**In short:** install Windows in a Hyper-V VM first, then run VM GPU Share to set up GPU sharing.
 The app copies the NVIDIA driver into the VM's Windows, so Windows has to be installed there before you share the GPU.
 
 ### 1. Turn on Hyper-V (once)
@@ -67,7 +67,7 @@ Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 
 Use the **same Windows version as this PC** (Windows 10 → Windows 10, Windows 11 → Windows 11). Pick one way:
 
-- **With VM Manager:**
+- **With VM GPU Share:**
   1. Download the latest `.exe` from **[Releases](../../releases/latest)** and run it.
   2. Open the **New VM** tab, choose a name, the Windows ISO, processors, memory and disk, then click **Create VM**.
   3. The VM starts and its console opens.
@@ -80,11 +80,11 @@ Then install Windows in the VM:
 1. In the console, press a key when it says *"Press any key to boot from CD or DVD"*.
 2. Install Windows, finish the setup, and sign in.
 3. **Give your Windows account a password.** Remote Desktop needs one.
-4. Shut the VM down, or leave it running: VM Manager handles both.
+4. Shut the VM down, or leave it running: VM GPU Share handles both.
 
-### 3. Share the GPU with VM Manager
+### 3. Share the GPU
 
-1. Run VM Manager and accept the administrator prompt.
+1. Run VM GPU Share and accept the administrator prompt.
 2. Select your VM in the list.
 3. Under **GPU sharing**, set the **Maximum share** slider, e.g. 80%.
 4. Click **Apply GPU share** and confirm.
@@ -116,7 +116,7 @@ The VM list marks the VM's driver as **Needs update**. Select the VM and click *
 dotnet build "VM Manager.csproj" -c Release
 ```
 
-Then run `bin\Release\net10.0-windows\VM Manager.exe` and accept the administrator prompt.
+Then run `bin\Release\net10.0-windows\VM GPU Share.exe` and accept the administrator prompt.
 To debug in Visual Studio, start Visual Studio **as administrator**.
 
 **Streaming:** the Stream button opens `VMStreamViewer.exe` if it sits next to the app. Otherwise it uses Moonlight if it's installed, and Remote Desktop to the VM's IP if not.
@@ -134,7 +134,7 @@ The Hyper-V PowerShell module only runs in **Windows PowerShell 5.1**, which .NE
 | `MainWindow.xaml` / `.cs` | The window: VM list, details page, New VM tab, dialogs, InfoBars |
 | `App.xaml` / `.cs` | Fluent theme, shared styles, theme switching, error logging |
 | `VmRow.cs` | One VM as shown in the list and on the details page |
-| `AppSettings.cs` | Saved settings (`%APPDATA%\VM Manager\settings.json`) |
+| `AppSettings.cs` | Saved settings (`%APPDATA%\VM GPU Share\settings.json`) |
 | `HyperV/GpuLib.ps1` | Hyper-V and GPU commands: list VMs, share or remove the GPU, copy the driver, create VMs |
 | `HyperV/PowerShellWorker.cs`, `Worker.ps1` | The background PowerShell worker and its protocol |
 | `app.manifest` | Requests administrator rights |

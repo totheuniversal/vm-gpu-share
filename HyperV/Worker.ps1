@@ -1,4 +1,4 @@
-# VM Manager - request loop, appended after GpuLib.ps1 and run in a hidden
+# VM GPU Share - request loop, appended after GpuLib.ps1 and run in a hidden
 # powershell.exe. Protocol (one line each, UTF-8):
 #   in:  {"script": "...", "args": [...]}
 #   out: LOG <text>          progress messages while a request runs

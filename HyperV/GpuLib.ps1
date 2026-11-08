@@ -1,4 +1,4 @@
-﻿# VM Manager - Hyper-V and GPU commands. Embedded in the app and run by
+﻿# VM GPU Share - Hyper-V and GPU commands. Embedded in the app and run by
 # PowerShellWorker in a background powershell.exe (see Worker.ps1).
 $ErrorActionPreference = 'Stop'
 

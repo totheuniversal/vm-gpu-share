@@ -36,7 +36,7 @@ namespace VM_Manager
         {
             string log = Path.Combine(AppContext.BaseDirectory, "error.log");
             try { File.AppendAllText(log, $"{DateTime.Now:yyyy-MM-dd HH:mm:ss}  {e.Exception}{Environment.NewLine}"); } catch (IOException) { }
-            MessageBox.Show(e.Exception.Message, "VM Manager error", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show(e.Exception.Message, "VM GPU Share error", MessageBoxButton.OK, MessageBoxImage.Error);
             e.Handled = true;
         }
     }

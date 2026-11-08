@@ -3,11 +3,13 @@ using System.Text.Json;
 
 namespace VM_Manager
 {
-    /// <summary>User choices kept between runs, in %APPDATA%\VM Manager\settings.json.</summary>
+    /// <summary>User choices kept between runs, in %APPDATA%\VM GPU Share\settings.json.</summary>
     public sealed class AppSettings
     {
-        static readonly string FilePath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "VM Manager", "settings.json");
+        static readonly string AppData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+        static readonly string FilePath = Path.Combine(AppData, "VM GPU Share", "settings.json");
+        // Where versions before 1.1.0 (named "VM Manager") kept them
+        static readonly string OldFilePath = Path.Combine(AppData, "VM Manager", "settings.json");
 
         /// <summary>System, Light or Dark.</summary>
         public string Theme { get; set; } = "System";
@@ -23,8 +25,9 @@ namespace VM_Manager
         {
             try
             {
-                if (File.Exists(FilePath))
-                    return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(FilePath)) ?? new AppSettings();
+                string path = File.Exists(FilePath) ? FilePath : OldFilePath;
+                if (File.Exists(path))
+                    return JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(path)) ?? new AppSettings();
             }
             catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { }
             return new AppSettings();
