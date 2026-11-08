@@ -24,6 +24,16 @@ Built with WPF on .NET 10 and its Fluent 2 theme: light and dark mode follow Win
   - theme picker (System / Light / Dark)
   - remembers window size, theme, GPU % and the last selected VM
 
+## In use
+
+SolidWorks 2025 running inside a VM that shares the host's RTX 4080, opened with Remote Desktop:
+
+![SolidWorks 2025 with a 3D part open inside the VM](docs/solidworks-in-vm.png)
+
+Inside the VM, Device Manager lists the shared GPU next to Hyper-V's own display adapters:
+
+![Device Manager in the VM showing the NVIDIA GeForce RTX 4080 Laptop GPU](docs/vm-device-manager.png)
+
 ## Requirements
 
 - Windows 10 (21H2 or later) or Windows 11, **Pro / Enterprise / Education**, with **Hyper-V** turned on
