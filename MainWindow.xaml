@@ -394,8 +394,26 @@
                                             </StackPanel>
                                         </Button>
                                     </Grid>
-                                    <TextBlock Style="{StaticResource CaptionText}" Margin="0,0,0,12"
+                                    <TextBlock Style="{StaticResource CaptionText}" Margin="0,0,0,10"
                                                Text="Optional. The VM boots from it so you can install Windows." />
+                                    <!-- Host and VM must run the same Windows version (set from code) -->
+                                    <Border Margin="0,0,0,12" Padding="12,10" CornerRadius="6" BorderThickness="1"
+                                            BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                                            Background="{DynamicResource SystemFillColorAttentionBackgroundBrush}">
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE946;" Margin="0,1,12,0" VerticalAlignment="Top"
+                                                       Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                                            <TextBlock Grid.Column="1" TextWrapping="Wrap">
+                                                <Run x:Name="runHostOsTitle" FontWeight="SemiBold" Text="Use the same Windows version as this PC." />
+                                                <LineBreak />
+                                                <Run x:Name="runHostOsMessage" Text="The VM runs this PC's NVIDIA driver, so the GPU only works when both run the same Windows: Windows 10 with Windows 10, Windows 11 with Windows 11." />
+                                            </TextBlock>
+                                        </Grid>
+                                    </Border>
                                     <CheckBox x:Name="checkNewTpm" IsChecked="True"
                                               Content="Windows 11 ready (adds a TPM; Secure Boot is always on)" />
                                 </StackPanel>

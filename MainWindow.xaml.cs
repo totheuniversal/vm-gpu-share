@@ -40,7 +40,23 @@ namespace VM_Manager
             refreshTimer.Tick += async (_, _) => { if (!busy) await RefreshVmsAsync(); };
             infoTimer.Tick += (_, _) => { infoTimer.Stop(); infoBar.Visibility = Visibility.Collapsed; };
             RestoreSettings();
+            ShowHostWindowsVersion();
             UpdateDetails();
+        }
+
+        /// <summary>
+        /// New VM tab: the VM runs this PC's NVIDIA driver, so it must run the same Windows
+        /// version. Windows 11 is build 22000 and later.
+        /// </summary>
+        void ShowHostWindowsVersion()
+        {
+            int build = Environment.OSVersion.Version.Build;
+            bool windows11 = build >= 22000;
+            string version = windows11 ? "Windows 11" : "Windows 10";
+            runHostOsTitle.Text = $"This PC runs {version} (build {build}): use a {version} ISO.";
+            runHostOsMessage.Text = "The VM runs this PC's NVIDIA driver, so the GPU only works when both run the same Windows: " +
+                                    "Windows 10 with Windows 10, Windows 11 with Windows 11.";
+            checkNewTpm.IsChecked = windows11;   // Windows 11 needs a TPM; Windows 10 doesn't
         }
 
         // ---- startup / shutdown ---------------------------------------------------
