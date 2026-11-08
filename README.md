@@ -3,6 +3,8 @@
 A Windows desktop app for running Hyper-V virtual machines with a **shared NVIDIA GPU** (GPU partitioning, GPU-P).
 Built with WPF on .NET 10 and its Fluent 2 theme: light and dark mode follow Windows.
 
+![VM Manager showing a running VM with live stats and GPU sharing](docs/screenshot.png)
+
 ## Features
 
 - **Virtual machines:** every Hyper-V VM in one list, with a status dot and summary. The page for the selected VM shows:
