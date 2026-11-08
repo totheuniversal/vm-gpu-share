@@ -146,3 +146,10 @@ The Hyper-V PowerShell module only runs in **Windows PowerShell 5.1**, which .NE
 - **Each VM's share is a maximum, not a reservation.** The host and running VMs share the GPU.
 - **GPU partitioning on client Windows** works with recent NVIDIA drivers, but Microsoft documents it mainly for Windows Server.
 - **If something goes wrong at runtime,** the app shows the error and writes it to `error.log` next to the `.exe`.
+
+## Credits
+
+Made by [totheuniversal](https://github.com/totheuniversal), with support from **[Claude Code](https://claude.com/claude-code)**, Anthropic's AI coding assistant. Claude Code helped with:
+- setting up GPU sharing on Hyper-V
+- the app's design and code
+- the documentation
