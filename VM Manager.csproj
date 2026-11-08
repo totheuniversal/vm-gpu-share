@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <RootNamespace>VM_Manager</RootNamespace>
+    <Nullable>enable</Nullable>
+    <UseWPF>true</UseWPF>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Asks for administrator rights at start; Hyper-V needs them -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Application.ThemeMode (built-in Fluent theme) is still marked experimental -->
+    <NoWarn>$(NoWarn);WPF0001</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Run by PowerShellWorker; read with GetManifestResourceStream("<name>") -->
+    <EmbeddedResource Include="HyperV\GpuLib.ps1" LogicalName="GpuLib.ps1" />
+    <EmbeddedResource Include="HyperV\Worker.ps1" LogicalName="Worker.ps1" />
+  </ItemGroup>
+
+</Project>

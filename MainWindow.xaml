@@ -1,0 +1,540 @@
+<Window x:Class="VM_Manager.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="VM Manager"
+        Width="1180" Height="760" MinWidth="980" MinHeight="640"
+        WindowStartupLocation="CenterScreen"
+        Loaded="Window_Loaded" Closing="Window_Closing" Closed="Window_Closed" PreviewKeyDown="Window_PreviewKeyDown">
+
+    <Window.Resources>
+        <!-- Button with an icon and text; Margin/Padding are set on each button so the
+             accent style can be swapped in from code without losing them -->
+        <Style x:Key="ButtonLabel" TargetType="StackPanel">
+            <Setter Property="Orientation" Value="Horizontal" />
+        </Style>
+        <Style x:Key="ButtonIcon" TargetType="TextBlock" BasedOn="{StaticResource Icon}">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="Margin" Value="0,0,8,0" />
+        </Style>
+
+        <!-- Small square icon-only button -->
+        <Style x:Key="IconButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <!-- ===================== Page ===================== -->
+        <Grid x:Name="page">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <Grid Grid.Row="0" Margin="24,18,24,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal">
+                    <Border Width="44" Height="44" CornerRadius="10" Margin="0,0,14,0"
+                            Background="{DynamicResource AccentFillColorDefaultBrush}">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE7F4;" FontSize="22" HorizontalAlignment="Center"
+                                   Foreground="{DynamicResource TextOnAccentFillColorPrimaryBrush}" />
+                    </Border>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Style="{StaticResource TitleText}" Text="VM Manager" />
+                        <TextBlock Style="{StaticResource CaptionText}" FontSize="13"
+                                   Text="Hyper-V virtual machines with a shared NVIDIA GPU" />
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Host GPU -->
+                <Border Grid.Column="1" Style="{StaticResource Card}" Padding="14,8" VerticalAlignment="Center">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Style="{StaticResource Icon}" Text="&#xE950;" FontSize="20" Margin="0,0,12,0"
+                                   Foreground="{DynamicResource AccentTextFillColorPrimaryBrush}" />
+                        <StackPanel>
+                            <TextBlock x:Name="textGpuName" Style="{StaticResource BodyStrongText}" Text="Looking for the NVIDIA GPU..." />
+                            <TextBlock x:Name="textGpuDriver" Style="{StaticResource CaptionText}" Text="" />
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- Theme -->
+                <ComboBox x:Name="comboTheme" Grid.Column="2" Width="140" Margin="12,0,0,0" VerticalAlignment="Center"
+                          ToolTip="App theme" SelectionChanged="comboTheme_SelectionChanged">
+                    <ComboBoxItem Content="System theme" Tag="System" />
+                    <ComboBoxItem Content="Light" Tag="Light" />
+                    <ComboBoxItem Content="Dark" Tag="Dark" />
+                </ComboBox>
+            </Grid>
+
+            <!-- Tabs -->
+            <TabControl x:Name="tabs" Grid.Row="1" Margin="24,12,24,12" Background="Transparent" BorderThickness="0" Padding="0">
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Style="{StaticResource ButtonLabel}">
+                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE7F8;" /><TextBlock Text="Virtual machines" />
+                        </StackPanel>
+                    </TabItem.Header>
+
+            <!-- Virtual machines tab -->
+            <Grid Margin="0,12,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="300" />
+                    <ColumnDefinition Width="16" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <!-- VM list -->
+                <Border Grid.Column="0" Style="{StaticResource Card}" Padding="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                        </Grid.RowDefinitions>
+                        <Grid Margin="16,12,8,6">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock Style="{StaticResource BodyStrongText}" Text="Virtual machines" />
+                                <TextBlock x:Name="textVmCount" Style="{StaticResource CaptionText}" Text="Loading..." />
+                            </StackPanel>
+                            <Button x:Name="buttonRefresh" Style="{StaticResource IconButton}" HorizontalAlignment="Right"
+                                    ToolTip="Refresh (the list also refreshes every few seconds)" Click="buttonRefresh_Click">
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE72C;" FontSize="14" />
+                            </Button>
+                        </Grid>
+
+                        <ListBox x:Name="listVms" Grid.Row="1" Margin="6,0,6,6" Background="Transparent" BorderThickness="0"
+                                 SelectionChanged="listVms_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="2,6">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <Border Width="36" Height="36" CornerRadius="6" Margin="0,0,12,0"
+                                                Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7F8;" HorizontalAlignment="Center" />
+                                        </Border>
+                                        <Ellipse x:Name="dot" Width="10" Height="10" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                                                 Margin="0,0,10,-1" Stroke="{DynamicResource CardBackgroundFillColorDefaultBrush}" StrokeThickness="2"
+                                                 Fill="{DynamicResource ControlStrongFillColorDisabledBrush}" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                            <TextBlock Style="{StaticResource BodyStrongText}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Style="{StaticResource CaptionText}" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding State, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Summary, Mode=OneWay}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                    </Grid>
+                                    <DataTemplate.Triggers>
+                                        <DataTrigger Binding="{Binding StateKind}" Value="Running">
+                                            <Setter TargetName="dot" Property="Fill" Value="{DynamicResource SystemFillColorSuccessBrush}" />
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding StateKind}" Value="Busy">
+                                            <Setter TargetName="dot" Property="Fill" Value="{DynamicResource SystemFillColorCautionBrush}" />
+                                        </DataTrigger>
+                                    </DataTemplate.Triggers>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <TextBlock x:Name="textNoVms" Grid.Row="1" Style="{StaticResource CaptionText}" Visibility="Collapsed"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="16"
+                                   Text="No virtual machines found. Create one in Hyper-V Manager." />
+                    </Grid>
+                </Border>
+
+                <!-- Details of the selected VM -->
+                <TextBlock x:Name="textNoSelection" Grid.Column="2" Style="{StaticResource CaptionText}" FontSize="14"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Text="Select a virtual machine" />
+
+                <ScrollViewer x:Name="scrollDetails" Grid.Column="2" VerticalScrollBarVisibility="Auto" Visibility="Collapsed">
+                    <StackPanel x:Name="panelDetails" DataContext="{Binding SelectedItem, ElementName=listVms}">
+
+                        <!-- Task / result InfoBar -->
+                        <Border x:Name="infoBar" CornerRadius="6" BorderThickness="1" Padding="14,10" Margin="0,0,0,12"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock x:Name="infoIcon" Style="{StaticResource Icon}" Margin="0,0,12,0" VerticalAlignment="Top" />
+                                <TextBlock Grid.Column="1" TextWrapping="Wrap" VerticalAlignment="Center">
+                                    <Run x:Name="infoTitle" FontWeight="SemiBold" /><Run Text="  " /><Run x:Name="infoMessage" />
+                                </TextBlock>
+                                <Button x:Name="infoClose" Grid.Column="2" Style="{StaticResource IconButton}" Padding="6" Margin="8,-4,-6,-4"
+                                        ToolTip="Close" Click="infoClose_Click">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE711;" FontSize="11" />
+                                </Button>
+                                <ProgressBar x:Name="infoProgress" Grid.Row="1" Grid.ColumnSpan="3" IsIndeterminate="True"
+                                             Margin="0,10,0,0" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+
+                        <!-- Driver warning InfoBar -->
+                        <Border x:Name="infoDriver" CornerRadius="6" BorderThickness="1" Padding="14,10" Margin="0,0,0,12"
+                                Background="{DynamicResource SystemFillColorCautionBackgroundBrush}"
+                                BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}" Visibility="Collapsed">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Style="{StaticResource Icon}" Text="&#xE7BA;" Margin="0,0,12,0"
+                                           Foreground="{DynamicResource SystemFillColorCautionBrush}" />
+                                <TextBlock Grid.Column="1" TextWrapping="Wrap" VerticalAlignment="Center">
+                                    <Run x:Name="runDriverTitle" FontWeight="SemiBold" /><Run Text="  " /><Run x:Name="runDriverMessage" />
+                                </TextBlock>
+                                <Button x:Name="buttonUpdateNow" Grid.Column="2" Padding="12,5" Margin="12,0,0,0"
+                                        Click="buttonUpdateDriver_Click" />
+                            </Grid>
+                        </Border>
+
+                        <!-- VM header + commands -->
+                        <Border Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                            <StackPanel>
+                                <Grid>
+                                    <StackPanel>
+                                        <StackPanel Orientation="Horizontal">
+                                            <TextBlock Style="{StaticResource SubtitleText}" FontSize="24" Text="{Binding Name}" Margin="0,0,12,0" />
+                                            <Border x:Name="pillState" Style="{StaticResource Pill}">
+                                                <StackPanel Orientation="Horizontal">
+                                                    <Ellipse x:Name="pillDot" Width="8" Height="8" Margin="0,0,6,0" VerticalAlignment="Center"
+                                                             Fill="{DynamicResource ControlStrongFillColorDisabledBrush}" />
+                                                    <TextBlock Text="{Binding State}" FontSize="12" FontWeight="SemiBold" />
+                                                </StackPanel>
+                                            </Border>
+                                        </StackPanel>
+                                        <TextBlock Style="{StaticResource CaptionText}" Margin="0,4,0,0">
+                                            <Run Text="{Binding Generation, Mode=OneWay}" /><Run Text="  ·  Network: " /><Run Text="{Binding Network, Mode=OneWay}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                </Grid>
+
+                                <Rectangle Height="1" Margin="0,16,0,14" Fill="{DynamicResource DividerStrokeColorDefaultBrush}" />
+
+                                <WrapPanel>
+                                    <Button x:Name="buttonStart" Padding="14,6" Margin="0,0,8,8" Click="buttonStart_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE768;" /><TextBlock Text="Start" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonShutDown" Padding="14,6" Margin="0,0,8,8" Click="buttonShutDown_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE7E8;" /><TextBlock Text="Shut down" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonRestart" Padding="14,6" Margin="0,0,8,8" Click="buttonRestart_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE895;" /><TextBlock Text="Restart" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonTurnOff" Padding="14,6" Margin="0,0,20,8" Click="buttonTurnOff_Click"
+                                            ToolTip="Like pulling the plug: unsaved work in the VM is lost">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE71A;" /><TextBlock Text="Turn off" />
+                                        </StackPanel>
+                                    </Button>
+
+                                    <Button x:Name="buttonStream" Padding="14,6" Margin="0,0,8,8" Click="buttonStream_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE7F4;" /><TextBlock x:Name="textStream" Text="Stream" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonConsole" Padding="14,6" Margin="0,0,8,8" Click="buttonConsole_Click"
+                                            ToolTip="Open the Hyper-V console window">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE756;" /><TextBlock Text="Console" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonCopyIp" Padding="14,6" Margin="0,0,8,8" Click="buttonCopyIp_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE8C8;" /><TextBlock Text="Copy IP" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Live stats -->
+                        <UniformGrid Columns="3" Margin="-6,-6,-6,6">
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="CPU usage" />
+                                    <TextBlock Style="{StaticResource StatValueText}">
+                                        <Run Text="{Binding CpuUsage, Mode=OneWay}" /><Run Text="%" />
+                                    </TextBlock>
+                                    <ProgressBar Value="{Binding CpuUsage, Mode=OneWay}" Maximum="100" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Margin="0,6,0,0">
+                                        <Run Text="{Binding Info.Cpus, Mode=OneWay}" /><Run Text=" virtual processors" />
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Memory" />
+                                    <TextBlock Style="{StaticResource StatValueText}" Text="{Binding Memory}" />
+                                    <ProgressBar Value="{Binding MemoryUsage, Mode=OneWay}" Maximum="100" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Margin="0,6,0,0" Text="{Binding MemoryDetail}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Uptime" />
+                                    <TextBlock Style="{StaticResource StatValueText}" Text="{Binding Uptime}" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Since the VM last started" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="IP address" />
+                                    <TextBlock Style="{StaticResource StatValueText}" Text="{Binding Ip}" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="{Binding Network}" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="GPU share" />
+                                    <TextBlock Style="{StaticResource StatValueText}" Text="{Binding Gpu}" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Of the host NVIDIA GPU" />
+                                </StackPanel>
+                            </Border>
+                            <Border Style="{StaticResource Card}" Margin="6">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Driver in VM" />
+                                    <TextBlock x:Name="textDriver" Style="{StaticResource StatValueText}" Text="{Binding Driver}" />
+                                    <TextBlock Style="{StaticResource CaptionText}" Text="Compared with this PC's driver" />
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- GPU sharing -->
+                        <Border Style="{StaticResource Card}" Padding="20,18">
+                            <StackPanel>
+                                <TextBlock Style="{StaticResource BodyStrongText}" FontSize="16" Text="GPU sharing" />
+                                <TextBlock Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,14"
+                                           Text="Choose how much of the NVIDIA GPU this VM may use. Applying it shuts the VM down, configures the GPU and copies the driver, then starts it again." />
+                                <Grid Margin="0,0,0,4">
+                                    <TextBlock Text="Maximum share" />
+                                    <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                               Text="{Binding Value, ElementName=sliderGpuShare, StringFormat={}{0:0}%}" />
+                                </Grid>
+                                <Slider x:Name="sliderGpuShare" Minimum="10" Maximum="100" Value="80"
+                                        TickFrequency="10" TickPlacement="BottomRight" IsSnapToTickEnabled="True" Margin="0,0,0,14" />
+                                <WrapPanel>
+                                    <Button x:Name="buttonShareGpu" Style="{DynamicResource AccentButtonStyle}" Padding="14,6" Margin="0,0,8,0"
+                                            Click="buttonShareGpu_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE73E;" /><TextBlock Text="Apply GPU share" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonUpdateDriver" Padding="14,6" Margin="0,0,8,0" Click="buttonUpdateDriver_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE896;" /><TextBlock Text="Update driver" />
+                                        </StackPanel>
+                                    </Button>
+                                    <Button x:Name="buttonRemoveGpu" Padding="14,6" Click="buttonRemoveGpu_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE74D;" /><TextBlock Text="Remove GPU" />
+                                        </StackPanel>
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+                </TabItem>
+
+                <!-- New VM tab -->
+                <TabItem>
+                    <TabItem.Header>
+                        <StackPanel Style="{StaticResource ButtonLabel}">
+                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE710;" /><TextBlock Text="New VM" />
+                        </StackPanel>
+                    </TabItem.Header>
+
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+                        <StackPanel MaxWidth="820" HorizontalAlignment="Left">
+                            <TextBlock Style="{StaticResource SubtitleText}" Text="Create a virtual machine" />
+                            <TextBlock Style="{StaticResource CaptionText}" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,16"
+                                       Text="Makes a Generation 2 VM that is ready for GPU sharing: fixed memory and no checkpoints." />
+
+                            <!-- Basics -->
+                            <Border Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource BodyStrongText}" Text="Basics" Margin="0,0,0,12" />
+                                    <TextBlock Text="Name" Margin="0,0,0,4" />
+                                    <TextBox x:Name="textNewName" Text="Windows VM" Margin="0,0,0,12" TextChanged="NewVmInput_Changed" />
+                                    <TextBlock Text="Windows installation ISO" Margin="0,0,0,4" />
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBox x:Name="textNewIso" TextChanged="NewVmInput_Changed" />
+                                        <Button Grid.Column="1" Padding="14,5" Margin="8,0,0,0" Click="buttonBrowseIso_Click">
+                                            <StackPanel Style="{StaticResource ButtonLabel}">
+                                                <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE8E5;" /><TextBlock Text="Browse" />
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
+                                    <TextBlock Style="{StaticResource CaptionText}" Margin="0,0,0,12"
+                                               Text="Optional. The VM boots from it so you can install Windows." />
+                                    <CheckBox x:Name="checkNewTpm" IsChecked="True"
+                                              Content="Windows 11 ready (adds a TPM; Secure Boot is always on)" />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Hardware -->
+                            <Border Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource BodyStrongText}" Text="Hardware" Margin="0,0,0,12" />
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Processors" />
+                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                                   Text="{Binding Value, ElementName=sliderNewCpus, StringFormat={}{0:0} virtual CPUs}" />
+                                    </Grid>
+                                    <Slider x:Name="sliderNewCpus" Minimum="1" Maximum="16" Value="8" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" Margin="0,0,0,14" />
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Memory" />
+                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                                   Text="{Binding Value, ElementName=sliderNewMemory, StringFormat={}{0:0} GB}" />
+                                    </Grid>
+                                    <Slider x:Name="sliderNewMemory" Minimum="2" Maximum="16" Value="8" TickFrequency="1"
+                                            IsSnapToTickEnabled="True" Margin="0,0,0,2" />
+                                    <TextBlock x:Name="textNewMemoryNote" Style="{StaticResource CaptionText}" Margin="0,0,0,14"
+                                               Text="Fixed memory: the VM always uses this much while it runs." />
+                                    <TextBlock Text="Disk size" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="comboNewDisk" Width="160" HorizontalAlignment="Left" SelectedIndex="1">
+                                        <ComboBoxItem Content="64 GB" Tag="64" />
+                                        <ComboBoxItem Content="128 GB" Tag="128" />
+                                        <ComboBoxItem Content="256 GB" Tag="256" />
+                                        <ComboBoxItem Content="512 GB" Tag="512" />
+                                    </ComboBox>
+                                    <TextBlock x:Name="textNewDiskPath" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                               Text="Grows as needed; it only takes the space actually used." />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Network -->
+                            <Border Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource BodyStrongText}" Text="Network" Margin="0,0,0,12" />
+                                    <TextBlock Text="Virtual switch" Margin="0,0,0,4" />
+                                    <ComboBox x:Name="comboNewSwitch" Width="260" HorizontalAlignment="Left" Margin="0,0,0,8"
+                                              SelectionChanged="NewVmInput_Changed" />
+                                    <TextBlock x:Name="textNewSwitchNote" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                                    <CheckBox x:Name="checkNewHostOnly" IsChecked="True"
+                                              Content="Only allow this PC (Hyper-V blocks everything else, including the internet)" />
+                                    <Border x:Name="panelNewIp" Margin="0,12,0,0" Padding="12,10" CornerRadius="6"
+                                            Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                        <TextBlock TextWrapping="Wrap">
+                                            <Run Text="After installing Windows, give the VM this address:" /><LineBreak />
+                                            <Run x:Name="runNewIp" FontWeight="SemiBold" Text="192.168.100.3" /><Run Text="  ·  subnet 255.255.255.0  ·  no gateway, no DNS" />
+                                        </TextBlock>
+                                    </Border>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- GPU -->
+                            <Border Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                                <StackPanel>
+                                    <TextBlock Style="{StaticResource BodyStrongText}" Text="NVIDIA GPU" Margin="0,0,0,12" />
+                                    <CheckBox x:Name="checkNewGpu" IsChecked="True" Content="Share the NVIDIA GPU with this VM" Margin="0,0,0,12"
+                                              Checked="NewVmInput_Changed" Unchecked="NewVmInput_Changed" />
+                                    <Grid Margin="0,0,0,4">
+                                        <TextBlock Text="Maximum share" />
+                                        <TextBlock HorizontalAlignment="Right" FontWeight="SemiBold"
+                                                   Text="{Binding Value, ElementName=sliderNewGpu, StringFormat={}{0:0}%}" />
+                                    </Grid>
+                                    <Slider x:Name="sliderNewGpu" Minimum="10" Maximum="100" Value="80" TickFrequency="10"
+                                            TickPlacement="BottomRight" IsSnapToTickEnabled="True"
+                                            IsEnabled="{Binding IsChecked, ElementName=checkNewGpu}" Margin="0,0,0,8" />
+                                    <TextBlock Style="{StaticResource CaptionText}" TextWrapping="Wrap"
+                                               Text="The NVIDIA driver is copied in after Windows is installed: the VM's page shows an Update driver button for it." />
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Create -->
+                            <Border Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,12">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <CheckBox x:Name="checkNewStart" IsChecked="True" Content="Start the VM and open its console" />
+                                        <TextBlock x:Name="textNewError" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed"
+                                                   Foreground="{DynamicResource SystemFillColorCriticalBrush}" />
+                                    </StackPanel>
+                                    <Button x:Name="buttonCreateVm" Grid.Column="1" Style="{DynamicResource AccentButtonStyle}"
+                                            Padding="18,7" Margin="16,0,0,0" Click="buttonCreateVm_Click">
+                                        <StackPanel Style="{StaticResource ButtonLabel}">
+                                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE710;" /><TextBlock Text="Create VM" />
+                                        </StackPanel>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+            </TabControl>
+
+            <!-- Activity log -->
+            <Expander Grid.Row="2" Header="Activity" IsExpanded="False" Margin="24,0,24,16"
+                      HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <TextBox x:Name="textLog" Height="130" IsReadOnly="True" TextWrapping="NoWrap"
+                         VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"
+                         FontFamily="Cascadia Mono, Consolas" FontSize="12" />
+            </Expander>
+        </Grid>
+
+        <!-- ===================== Dialog (Fluent ContentDialog look) ===================== -->
+        <Grid x:Name="dialogOverlay" Visibility="Collapsed">
+            <Rectangle Fill="{DynamicResource SmokeFillColorDefaultBrush}" />
+            <Border Width="460" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="8" BorderThickness="1"
+                    BorderBrush="{DynamicResource CardStrokeColorDefaultBrush}"
+                    Background="{DynamicResource SolidBackgroundFillColorBaseBrush}">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="40" ShadowDepth="10" Opacity="0.3" Direction="270" />
+                </Border.Effect>
+                <StackPanel>
+                    <Border CornerRadius="8,8,0,0" Padding="24,22,24,24" Background="{DynamicResource SolidBackgroundFillColorTertiaryBrush}">
+                        <StackPanel>
+                            <TextBlock x:Name="dialogTitle" Style="{StaticResource SubtitleText}" TextWrapping="Wrap" Margin="0,0,0,12" />
+                            <TextBlock x:Name="dialogMessage" TextWrapping="Wrap" LineHeight="20" />
+                        </StackPanel>
+                    </Border>
+                    <Grid Margin="24,20">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="8" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button x:Name="dialogPrimary" Style="{DynamicResource AccentButtonStyle}" HorizontalAlignment="Stretch"
+                                Padding="12,6" Click="dialogPrimary_Click" />
+                        <Button x:Name="dialogCancel" Grid.Column="2" Content="Cancel" HorizontalAlignment="Stretch"
+                                Padding="12,6" Click="dialogCancel_Click" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
