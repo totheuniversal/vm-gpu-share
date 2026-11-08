@@ -165,7 +165,4 @@ Open **Activity** at the bottom of the app to see what happened. Errors are also
 
 ## Credits
 
-Made by [totheuniversal](https://github.com/totheuniversal), with support from **[Claude Code](https://claude.com/claude-code)**, Anthropic's AI coding assistant. Claude Code helped with:
-- setting up GPU sharing on Hyper-V
-- the app's design and code
-- the documentation
+Made by [totheuniversal](https://github.com/totheuniversal), with support from **[Claude Code](https://claude.com/claude-code)**.
