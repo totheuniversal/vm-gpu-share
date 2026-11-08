@@ -163,6 +163,23 @@ Open **Activity** at the bottom of the app to see what happened. Errors are also
 - **The GPU share is a limit, not a reservation:** your PC and running VMs share the GPU.
 - **Your settings are remembered:** window size, theme, GPU % and the last VM.
 
+## References
+
+**Where this started**
+- [**ogb4n/hyperV-gpu-sharing**](https://github.com/ogb4n/hyperV-gpu-sharing): PowerShell scripts to share an NVIDIA GPU with a Hyper-V VM. VM GPU Share began from this approach.
+
+**Similar projects**
+- [**Easy-GPU-PV**](https://github.com/jamesstringerparsec/Easy-GPU-PV): popular PowerShell scripts that create a VM and set up GPU partitioning.
+
+**Microsoft documentation**
+- [**GPU partitioning**](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/gpu-partitioning): Microsoft's guide to GPU-P (written for Windows Server).
+- [**Add-VMGpuPartitionAdapter**](https://learn.microsoft.com/en-us/powershell/module/hyper-v/add-vmgpupartitionadapter): the Hyper-V command that gives a VM a share of the GPU.
+- [**Discrete Device Assignment (DDA)**](https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/deploy/deploying-graphics-devices-using-dda): giving a whole GPU to one VM instead (Windows Server only).
+
+**Tools for connecting to a VM**
+- [**parsec-vdd**](https://github.com/nomi-san/parsec-vdd): virtual monitors (up to 4K, 240 Hz) for VMs without a real screen.
+- [**Sunshine**](https://github.com/LizardByte/Sunshine) + [**Moonlight**](https://github.com/moonlight-stream/moonlight-qt): low-latency streaming of a VM's desktop, also on an offline local network.
+
 ## Credits
 
 Made by [totheuniversal](https://github.com/totheuniversal), with support from **[Claude Code](https://claude.com/claude-code)**.
