@@ -40,7 +40,15 @@ Inside the VM, Device Manager lists the shared GPU next to Hyper-V's own display
 - An **NVIDIA GPU** that Hyper-V can partition (`Get-VMHostPartitionableGpu`, or `Get-VMPartitionableGpu` on Windows 10)
 - **Administrator rights.** The app asks for them when it starts.
 - To build: the [.NET 10 SDK](https://dotnet.microsoft.com/download), or Visual Studio with the ".NET desktop development" workload
-- VMs need a **Windows 10/11** guest for the GPU driver copy
+- **The VM must run the same Windows version as the host PC:**
+
+  | Host PC | Virtual machine |
+  |---|---|
+  | Windows 10 | Windows 10 |
+  | Windows 11 | Windows 11 |
+
+> [!IMPORTANT]
+> **Use the same Windows version on the host and in the VM.** The VM runs the host's NVIDIA driver files, which the app copies in. If the host and VM run different Windows versions, the GPU may not work in the VM: it can show an error in Device Manager (often Code 43), or no GPU acceleration at all. A Windows 10 host needs Windows 10 VMs, and a Windows 11 host needs Windows 11 VMs.
 
 ## Build and run
 
