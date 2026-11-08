@@ -50,6 +50,66 @@ Inside the VM, Device Manager lists the shared GPU next to Hyper-V's own display
 > [!IMPORTANT]
 > **Use the same Windows version on the host and in the VM.** The VM runs the host's NVIDIA driver files, which the app copies in. If the host and VM run different Windows versions, the GPU may not work in the VM: it can show an error in Device Manager (often Code 43), or no GPU acceleration at all. A Windows 10 host needs Windows 10 VMs, and a Windows 11 host needs Windows 11 VMs.
 
+## Getting started
+
+**In short:** install Windows in a Hyper-V VM first, then run VM Manager to set up GPU sharing.
+The app copies the NVIDIA driver into the VM's Windows, so Windows has to be installed there before you share the GPU.
+
+### 1. Turn on Hyper-V (once)
+
+Open **Turn Windows features on or off**, tick **Hyper-V**, and restart. Or run this in PowerShell **as administrator** and restart:
+
+```powershell
+Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
+```
+
+### 2. Create a VM and install Windows
+
+Use the **same Windows version as this PC** (Windows 10 → Windows 10, Windows 11 → Windows 11). Pick one way:
+
+- **With VM Manager:**
+  1. Download the latest `.exe` from **[Releases](../../releases/latest)** and run it.
+  2. Open the **New VM** tab, choose a name, the Windows ISO, processors, memory and disk, then click **Create VM**.
+  3. The VM starts and its console opens.
+- **With Hyper-V Manager:** go to **Action → New → Virtual Machine** and choose:
+  - **Generation 2**
+  - **untick "Use Dynamic Memory"**
+  - your Windows ISO
+
+Then install Windows in the VM:
+1. In the console, press a key when it says *"Press any key to boot from CD or DVD"*.
+2. Install Windows, finish the setup, and sign in.
+3. **Give your Windows account a password.** Remote Desktop needs one.
+4. Shut the VM down, or leave it running: VM Manager handles both.
+
+### 3. Share the GPU with VM Manager
+
+1. Run VM Manager and accept the administrator prompt.
+2. Select your VM in the list.
+3. Under **GPU sharing**, set the **Maximum share** slider, e.g. 80%.
+4. Click **Apply GPU share** and confirm.
+
+The app then:
+- shuts the VM down
+- adds the GPU and the settings it needs (fixed memory, checkpoints off)
+- copies this PC's NVIDIA driver into the VM
+- starts the VM again
+
+When it's done, **Driver in VM** shows **Up to date**.
+
+### 4. Check the GPU in the VM
+
+Inside the VM, open **Device Manager → Display adapters**. Your NVIDIA GPU should be listed **without a warning sign** (see the screenshot above).
+
+### 5. Use the VM
+
+- **Remote Desktop** (the Stream button, or `mstsc /v:<VM IP>`) gives you GPU-accelerated apps, such as SolidWorks or other 3D software.
+- **Console** opens the basic Hyper-V window. It's fine for setup, but it doesn't show GPU acceleration.
+
+### After you update the NVIDIA driver on this PC
+
+The VM list marks the VM's driver as **Needs update**. Select the VM and click **Update now** (or **Update driver**) to copy the new driver in.
+
 ## Build and run
 
 ```bash
