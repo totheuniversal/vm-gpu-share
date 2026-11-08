@@ -12,7 +12,7 @@
     <!-- Application.ThemeMode (built-in Fluent theme) is still marked experimental -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
 
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Product>VM Manager</Product>
     <Description>Manage Hyper-V VMs with a shared NVIDIA GPU</Description>
     <Copyright>totheuniversal</Copyright>
