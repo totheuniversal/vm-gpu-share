@@ -11,10 +11,12 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <!-- Asks for administrator rights at start; Hyper-V needs them -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Logo for the .exe; made by tools\make-icon.ps1 -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <!-- Application.ThemeMode (built-in Fluent theme) is still marked experimental -->
     <NoWarn>$(NoWarn);WPF0001</NoWarn>
 
-    <Version>1.3.0</Version>
+    <Version>1.3.1</Version>
     <Product>VM GPU Share</Product>
     <Description>Share your NVIDIA GPU with Hyper-V virtual machines</Description>
     <Copyright>totheuniversal</Copyright>
@@ -24,6 +26,9 @@
     <!-- Run by PowerShellWorker; read with GetManifestResourceStream("<name>") -->
     <EmbeddedResource Include="HyperV\GpuLib.ps1" LogicalName="GpuLib.ps1" />
     <EmbeddedResource Include="HyperV\Worker.ps1" LogicalName="Worker.ps1" />
+    <!-- Window and taskbar icon (MainWindow Icon="Assets/app.ico") -->
+    <Resource Include="Assets\app.ico" />
+    <Resource Include="docs\logo.png" />
   </ItemGroup>
 
 </Project>

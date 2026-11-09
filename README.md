@@ -1,4 +1,4 @@
-# VM GPU Share
+# <img src="docs/logo.png" alt="" width="40"> VM GPU Share
 
 **Share your NVIDIA graphics card with Hyper-V virtual machines.**
 Run 3D apps, CAD and GPU software inside a VM, at near-native speed, with a few clicks.
