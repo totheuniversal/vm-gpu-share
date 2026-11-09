@@ -4,7 +4,8 @@
 #   out: LOG <text>          progress messages while a request runs
 #        RESULT <json array>  the request's output
 #        ERROR <message>      the request failed
-[Console]::InputEncoding = [Text.UTF8Encoding]::new($false)
+# The loader in PowerShellWorker.cs already set [Console]::InputEncoding. Setting it again
+# here would drop request lines that are already buffered.
 [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
 $ProgressPreference = 'SilentlyContinue'
 

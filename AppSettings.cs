@@ -15,6 +15,8 @@ namespace VM_Manager
         public string Theme { get; set; } = "System";
         public int GpuShare { get; set; } = 80;
         public string? LastVm { get; set; }
+        /// <summary>Folder inside the VM that the Copy files tab copies into.</summary>
+        public string CopyDestination { get; set; } = @"C:\Users\SLW\Desktop\Share";
         public double? Left { get; set; }
         public double? Top { get; set; }
         public double Width { get; set; } = 1180;

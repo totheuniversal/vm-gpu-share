@@ -16,6 +16,7 @@ One file, nothing to install: download `VM-GPU-Share-…-win-x64.exe` and double
 - **Shares your NVIDIA GPU with a VM.** Pick how much (10–100%) and click one button.
 - **Copies the graphics driver into the VM for you,** and tells you when it needs updating.
 - **Creates new VMs** that are ready for GPU sharing.
+- **Copies files and folders into a VM,** even one with no network, without the VM's password.
 - **Shows your VMs live:** state, CPU, memory, uptime and IP address, with Start, Shut down, Restart and Connect buttons.
 
 ## What you need
@@ -90,6 +91,7 @@ When it's done, **Driver in VM** shows **Up to date**. ✅
 | Start or stop the VM | Select it → **Start**, **Shut down** or **Restart** |
 | Work in the VM with the GPU | **Remote Desktop** button. This is the fast way, and 3D apps use the GPU. |
 | See the VM's basic window | **Console**. Good for setup, but it **doesn't show GPU acceleration**. |
+| Copy files from my PC into the VM | **Copy files** tab → see below |
 | Give the VM more or less GPU | Move the slider → **Apply GPU share** |
 | Update after a new NVIDIA driver on my PC | When it says **Needs update** → **Update now** |
 | Take the GPU away from the VM | **Remove GPU** |
@@ -97,6 +99,18 @@ When it's done, **Driver in VM** shows **Up to date**. ✅
 
 > [!TIP]
 > **After every NVIDIA driver update on your PC,** open VM GPU Share and click **Update now** for each VM. Otherwise the GPU in the VM can stop working.
+
+### Copy files into the VM
+
+1. **Start the VM** and wait until Windows has started.
+2. Open the **Copy files** tab and pick the **Virtual machine**.
+3. Set **Folder in the VM**, e.g. `C:\Users\<your VM user name>\Desktop\Share`. It's created if it doesn't exist, and the app remembers it.
+4. Click **Add files** or **Add folder**. Or select files in File Explorer, press **Ctrl+C**, and press **Ctrl+V** in the app.
+5. Click **Copy to VM**.
+
+Folders keep their subfolders. Files with the same name in the VM are replaced. No network is needed, so this also works for an offline VM.
+
+> Dragging files onto the app doesn't work, because Windows blocks drag-and-drop into apps that run as administrator. Use **Ctrl+C / Ctrl+V** instead.
 
 ### Example: SolidWorks in a VM
 
@@ -141,6 +155,14 @@ That's normal. Hyper-V's console window never uses the GPU. Connect with **Remot
 - The VM must be **running** and show an **IP address** in the app.
 - In the VM, turn on **Settings → System → Remote Desktop**. This needs Windows **Pro** in the VM.
 - Your Windows account in the VM must have a **password**.
+</details>
+
+<details>
+<summary><b>Copy files fails or says the VM isn't ready</b></summary>
+
+- The VM must be **running**, and Windows inside it must have finished starting. Wait a minute after starting the VM.
+- The copy uses Hyper-V's **Guest Service Interface**. The app turns it on when needed, but Windows in the VM needs its Hyper-V services running (they are by default).
+- **Folder in the VM** must be a full path such as `C:\Users\<you>\Desktop\Share`.
 </details>
 
 <details>

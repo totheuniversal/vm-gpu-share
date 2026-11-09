@@ -361,6 +361,160 @@
             </Grid>
                 </TabItem>
 
+                <!-- Copy files tab -->
+                <TabItem x:Name="tabCopy">
+                    <TabItem.Header>
+                        <StackPanel Style="{StaticResource ButtonLabel}">
+                            <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE898;" /><TextBlock Text="Copy files" />
+                        </StackPanel>
+                    </TabItem.Header>
+
+                    <Grid Margin="0,12,0,0" MaxWidth="820" HorizontalAlignment="Left">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" MinHeight="150" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+
+                        <StackPanel>
+                            <TextBlock Style="{StaticResource SubtitleText}" Text="Copy files to a VM" />
+                            <TextBlock Style="{StaticResource CaptionText}" FontSize="13" TextWrapping="Wrap" Margin="0,2,0,16"
+                                       Text="Sends files and folders from this PC into a running VM through Hyper-V. No network and no VM password needed." />
+                        </StackPanel>
+
+                        <!-- Where to -->
+                        <Border Grid.Row="1" Style="{StaticResource Card}" Padding="20,18" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="260" />
+                                    <ColumnDefinition Width="16" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+                                <TextBlock Text="Virtual machine" Margin="0,0,0,4" />
+                                <!-- Same selection as the Virtual machines tab -->
+                                <ComboBox x:Name="comboCopyVm" Grid.Row="1" HorizontalAlignment="Stretch"
+                                          SelectedItem="{Binding SelectedItem, ElementName=listVms, Mode=TwoWay}"
+                                          SelectionChanged="CopyInput_Changed">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock TextTrimming="CharacterEllipsis">
+                                                <Run Text="{Binding Name, Mode=OneWay}" /><Run Text="  ·  " Foreground="{DynamicResource TextFillColorSecondaryBrush}" /><Run Text="{Binding State, Mode=OneWay}" Foreground="{DynamicResource TextFillColorSecondaryBrush}" />
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+
+                                <TextBlock Grid.Column="2" Text="Folder in the VM" Margin="0,0,0,4" />
+                                <TextBox x:Name="textCopyDest" Grid.Row="1" Grid.Column="2" TextChanged="CopyInput_Changed" />
+                                <TextBlock Grid.Row="2" Grid.Column="2" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                           Text="Created if it doesn't exist. Files with the same name are replaced." />
+                            </Grid>
+                        </Border>
+
+                        <!-- What to copy -->
+                        <Border Grid.Row="2" Style="{StaticResource Card}" Padding="0" Margin="0,0,0,12">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+                                <Grid Margin="20,14,14,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Style="{StaticResource BodyStrongText}" Text="Files to copy" />
+                                        <TextBlock x:Name="textCopySummary" Style="{StaticResource CaptionText}" Text="Nothing added yet" />
+                                    </StackPanel>
+                                    <WrapPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <Button x:Name="buttonCopyAddFiles" Padding="12,5" Margin="0,0,8,0" Click="buttonCopyAddFiles_Click">
+                                            <StackPanel Style="{StaticResource ButtonLabel}">
+                                                <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE8E5;" /><TextBlock Text="Add files" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="buttonCopyAddFolder" Padding="12,5" Margin="0,0,8,0" Click="buttonCopyAddFolder_Click">
+                                            <StackPanel Style="{StaticResource ButtonLabel}">
+                                                <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xED25;" /><TextBlock Text="Add folder" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="buttonCopyPaste" Padding="12,5" Margin="0,0,8,0" Click="buttonCopyPaste_Click"
+                                                ToolTip="Add files you copied in File Explorer (Ctrl+V)">
+                                            <StackPanel Style="{StaticResource ButtonLabel}">
+                                                <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE77F;" /><TextBlock Text="Paste" />
+                                            </StackPanel>
+                                        </Button>
+                                        <Button x:Name="buttonCopyRemove" Padding="12,5" Click="buttonCopyRemove_Click"
+                                                ToolTip="Remove the selected items from the list (Delete)">
+                                            <StackPanel Style="{StaticResource ButtonLabel}">
+                                                <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE738;" /><TextBlock Text="Remove" />
+                                            </StackPanel>
+                                        </Button>
+                                    </WrapPanel>
+                                </Grid>
+
+                                <ListBox x:Name="listCopyItems" Grid.Row="1" Margin="6,0,6,6" Background="Transparent" BorderThickness="0"
+                                         SelectionMode="Extended" ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                         SelectionChanged="listCopyItems_SelectionChanged" KeyDown="listCopyItems_KeyDown">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid Margin="2,4">
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto" />
+                                                    <ColumnDefinition Width="*" />
+                                                </Grid.ColumnDefinitions>
+                                                <Border Width="32" Height="32" CornerRadius="6" Margin="0,0,12,0"
+                                                        Background="{DynamicResource SubtleFillColorSecondaryBrush}">
+                                                    <TextBlock Style="{StaticResource Icon}" Text="{Binding Glyph}" HorizontalAlignment="Center" />
+                                                </Border>
+                                                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                                    <TextBlock Style="{StaticResource BodyStrongText}" Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                                                    <TextBlock Style="{StaticResource CaptionText}" TextTrimming="CharacterEllipsis">
+                                                        <Run Text="{Binding Detail, Mode=OneWay}" /><Run Text="  ·  " /><Run Text="{Binding Path, Mode=OneWay}" />
+                                                    </TextBlock>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+
+                                <StackPanel x:Name="panelCopyEmpty" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24">
+                                    <TextBlock Style="{StaticResource Icon}" Text="&#xE898;" FontSize="28" HorizontalAlignment="Center" Margin="0,0,0,8"
+                                               Foreground="{DynamicResource TextFillColorTertiaryBrush}" />
+                                    <TextBlock Style="{StaticResource CaptionText}" TextAlignment="Center" TextWrapping="Wrap"
+                                               Text="Add files or folders, or copy them in File Explorer and press Ctrl+V here." />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- Copy -->
+                        <Border Grid.Row="3" Style="{StaticResource Card}" Padding="20,16" Margin="0,0,0,4">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <StackPanel VerticalAlignment="Center">
+                                    <TextBlock x:Name="textCopyStatus" TextWrapping="Wrap" />
+                                    <ProgressBar x:Name="progressCopy" Margin="0,8,0,0" Visibility="Collapsed" />
+                                </StackPanel>
+                                <Button x:Name="buttonCopyFiles" Grid.Column="1" Style="{DynamicResource AccentButtonStyle}"
+                                        Padding="18,7" Margin="16,0,0,0" VerticalAlignment="Center" Click="buttonCopyFiles_Click">
+                                    <StackPanel Style="{StaticResource ButtonLabel}">
+                                        <TextBlock Style="{StaticResource ButtonIcon}" Text="&#xE898;" /><TextBlock Text="Copy to VM" />
+                                    </StackPanel>
+                                </Button>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
                 <!-- New VM tab -->
                 <TabItem>
                     <TabItem.Header>

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
@@ -29,14 +30,20 @@ namespace VM_Manager
         HostGpu? hostGpu;
         NewVmDefaults? newDefaults;
         TaskCompletionSource<bool>? dialogResult;
+        readonly ObservableCollection<CopyItem> copyItems = new();
+        (Severity Kind, string Text)? copyResult;   // last copy's outcome, shown until the inputs change
+        string? lastTaskError;
         bool busy;
         bool refreshing;
         bool loaded;
+        bool copying;
 
         public MainWindow()
         {
             InitializeComponent();
             listVms.ItemsSource = vms;
+            comboCopyVm.ItemsSource = vms;
+            listCopyItems.ItemsSource = copyItems;
             refreshTimer.Tick += async (_, _) => { if (!busy) await RefreshVmsAsync(); };
             infoTimer.Tick += (_, _) => { infoTimer.Stop(); infoBar.Visibility = Visibility.Collapsed; };
             RestoreSettings();
@@ -73,6 +80,7 @@ namespace VM_Manager
             }
             if (settings.Maximized) WindowState = WindowState.Maximized;
             sliderGpuShare.Value = Math.Clamp(settings.GpuShare, 10, 100);
+            textCopyDest.Text = settings.CopyDestination;
             foreach (ComboBoxItem item in comboTheme.Items)
                 if ((string)item.Tag == settings.Theme) comboTheme.SelectedItem = item;
             if (comboTheme.SelectedItem == null) comboTheme.SelectedIndex = 0;
@@ -91,7 +99,7 @@ namespace VM_Manager
             {
                 refreshWorker = new PowerShellWorker();
                 taskWorker = new PowerShellWorker();
-                taskWorker.Log += message => Dispatcher.BeginInvoke(() => WriteLog(message));
+                taskWorker.Log += message => Dispatcher.BeginInvoke(() => { WriteLog(message); ShowCopyProgress(message); });
 
                 hostGpu = (await refreshWorker.RunAsync<HostGpu>("Get-HostNvidia")).FirstOrDefault();
                 textGpuName.Text = hostGpu?.Name ?? "No NVIDIA GPU found";
@@ -212,6 +220,7 @@ namespace VM_Manager
             buttonUpdateDriver.IsEnabled = buttonUpdateNow.IsEnabled = buttonRemoveGpu.IsEnabled = hasGpu && free;
             buttonRefresh.IsEnabled = free;
             Cursor = busy ? Cursors.AppStarting : null;
+            UpdateCopyForm();
 
             // The most useful next step gets the accent color
             SetAccent(buttonStart, off);
@@ -262,6 +271,7 @@ namespace VM_Manager
         /// <summary>Runs a Hyper-V job on the task worker; returns whether it succeeded.</summary>
         async Task<bool> RunTaskAsync(string title, string script, params object[] args)
         {
+            lastTaskError = busy ? "Another task is still running." : null;
             if (busy || taskWorker == null) return false;
             busy = true;
             buttonCreateVm.IsEnabled = false;
@@ -278,6 +288,7 @@ namespace VM_Manager
             }
             catch (Exception ex)
             {
+                lastTaskError = ex.Message;
                 WriteLog("ERROR: " + ex.Message);
                 WriteLog(title + ": failed.");
                 ShowInfo(Severity.Error, title + " failed.", ex.Message);
@@ -506,6 +517,186 @@ namespace VM_Manager
             await LoadNewVmDefaultsAsync(firstTime: false);
         }
 
+        // ---- Copy files tab -----------------------------------------------------------
+
+        // Progress lines written by Copy-FilesToVM in GpuLib.ps1
+        static readonly Regex CopyProgressLine = new(@"^Copying (\d+) of (\d+): (.+)$");
+
+        string CopyDestination => textCopyDest.Text.Trim().Trim('"').Trim();
+
+        // A full Windows path such as C:\Users\you\Desktop\Share
+        static bool IsVmPath(string path) =>
+            Regex.IsMatch(path, @"^[A-Za-z]:\\") && path.IndexOfAny(['*', '?', '"', '<', '>', '|']) < 0 && path.IndexOf(':', 2) < 0;
+
+        void CopyInput_Changed(object sender, RoutedEventArgs e)
+        {
+            settings.CopyDestination = CopyDestination;
+            copyResult = null;
+            UpdateCopyForm();
+        }
+
+        void UpdateCopyForm()
+        {
+            VmRow? row = SelectedRow;
+            bool running = row?.IsRunning == true;
+            string dest = CopyDestination;
+            bool destOk = IsVmPath(dest);
+            int files = copyItems.Sum(i => i.Files);
+            long bytes = copyItems.Sum(i => i.Bytes);
+
+            textCopySummary.Text = copyItems.Count == 0 ? "Nothing added yet"
+                : $"{CopyItem.Plural(copyItems.Count, "item")} · {CopyItem.Plural(files, "file")} · {CopyItem.FormatSize(bytes)}";
+            panelCopyEmpty.Visibility = copyItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            buttonCopyAddFiles.IsEnabled = buttonCopyAddFolder.IsEnabled = buttonCopyPaste.IsEnabled = !copying;
+            buttonCopyRemove.IsEnabled = !copying && listCopyItems.SelectedItems.Count > 0;
+            textCopyDest.IsEnabled = comboCopyVm.IsEnabled = !copying;
+            buttonCopyFiles.IsEnabled = !busy && running && destOk && files > 0;
+
+            if (copying) return;   // the progress is showing
+            if (copyResult is { } result)
+            {
+                SetCopyStatus(result.Kind, result.Text);
+                return;
+            }
+            string? hint =
+                row == null ? "Select the VM to copy to." :
+                !running ? $"{row.Name} is {row.State.ToLowerInvariant()}. Start it first: files can only be copied into a running VM." :
+                copyItems.Count == 0 ? "Add the files or folders to copy." :
+                files == 0 ? "The folders are empty: there is nothing to copy." :
+                !destOk ? @"Enter the folder in the VM as a full path, like C:\Users\you\Desktop\Share." :
+                busy ? "Waiting for the current task to finish..." :
+                null;
+            SetCopyStatus(null, hint ?? $"Ready to copy {CopyItem.Plural(files, "file")} ({CopyItem.FormatSize(bytes)}) to {dest} in {row!.Name}.");
+        }
+
+        void SetCopyStatus(Severity? kind, string text)
+        {
+            textCopyStatus.Text = text;
+            textCopyStatus.SetResourceReference(ForegroundProperty, kind switch
+            {
+                Severity.Success => "SystemFillColorSuccessBrush",
+                Severity.Error => "SystemFillColorCriticalBrush",
+                Severity.Busy => "TextFillColorPrimaryBrush",
+                _ => "TextFillColorSecondaryBrush",
+            });
+        }
+
+        /// <summary>Adds files and folders to the list; folders are measured in the background.</summary>
+        async Task AddCopyPathsAsync(IEnumerable<string> paths)
+        {
+            var list = paths.ToList();
+            if (list.Count == 0) return;
+            SetCopyStatus(null, "Adding...");
+            List<CopyItem?> found;
+            try
+            {
+                found = await Task.Run(() => list.Select(CopyItem.FromPath).ToList());
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException)
+            {
+                copyResult = (Severity.Error, "Could not read it: " + ex.Message);
+                UpdateCopyForm();
+                return;
+            }
+            foreach (var item in found)
+                if (item != null && !copyItems.Any(i => i.Path.Equals(item.Path, StringComparison.OrdinalIgnoreCase)))
+                    copyItems.Add(item);
+            copyResult = null;
+            UpdateCopyForm();
+        }
+
+        async void buttonCopyAddFiles_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog { Title = "Choose files to copy to the VM", Multiselect = true };
+            if (dialog.ShowDialog(this) == true) await AddCopyPathsAsync(dialog.FileNames);
+        }
+
+        async void buttonCopyAddFolder_Click(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFolderDialog { Title = "Choose folders to copy to the VM", Multiselect = true };
+            if (dialog.ShowDialog(this) == true) await AddCopyPathsAsync(dialog.FolderNames);
+        }
+
+        void buttonCopyPaste_Click(object sender, RoutedEventArgs e) => PasteFiles();
+
+        // Dragging from File Explorer can't reach this window (it runs as administrator), so
+        // files copied in File Explorer (Ctrl+C) can be pasted instead
+        async void PasteFiles()
+        {
+            System.Collections.Specialized.StringCollection? files = null;
+            try
+            {
+                if (Clipboard.ContainsFileDropList()) files = Clipboard.GetFileDropList();
+            }
+            catch (System.Runtime.InteropServices.ExternalException) { }   // clipboard in use
+            if (files == null || files.Count == 0)
+            {
+                copyResult = (Severity.Error, "There are no files on the clipboard. Select files in File Explorer, press Ctrl+C, then paste here.");
+                UpdateCopyForm();
+                return;
+            }
+            await AddCopyPathsAsync(files.Cast<string>());
+        }
+
+        void buttonCopyRemove_Click(object sender, RoutedEventArgs e) => RemoveSelectedCopyItems();
+
+        void RemoveSelectedCopyItems()
+        {
+            foreach (var item in listCopyItems.SelectedItems.Cast<CopyItem>().ToList()) copyItems.Remove(item);
+            copyResult = null;
+            UpdateCopyForm();
+        }
+
+        void listCopyItems_SelectionChanged(object sender, SelectionChangedEventArgs e) =>
+            buttonCopyRemove.IsEnabled = !copying && listCopyItems.SelectedItems.Count > 0;
+
+        void listCopyItems_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key != Key.Delete || copying) return;
+            RemoveSelectedCopyItems();
+            e.Handled = true;
+        }
+
+        async void buttonCopyFiles_Click(object sender, RoutedEventArgs e)
+        {
+            string dest = CopyDestination;
+            if (SelectedVm is not { } vm || copyItems.Count == 0 || !IsVmPath(dest)) return;
+            settings.CopyDestination = dest;
+            settings.Save();
+
+            var items = copyItems.ToList();
+            int files = items.Sum(i => i.Files);
+            long bytes = items.Sum(i => i.Bytes);
+            copying = true;
+            copyResult = null;
+            progressCopy.IsIndeterminate = true;
+            progressCopy.Visibility = Visibility.Visible;
+            SetCopyStatus(Severity.Busy, $"Copying to {vm.Name}...");
+
+            bool ok = await RunTaskAsync($"Copying {CopyItem.Plural(files, "file")} to {vm.Name}",
+                "Copy-FilesToVM $args[0] $args[1] $args[2]", vm.Name, dest, items.Select(i => i.Path).ToArray());
+
+            copying = false;
+            progressCopy.Visibility = Visibility.Collapsed;
+            copyResult = ok
+                ? (Severity.Success, $"Copied {CopyItem.Plural(files, "file")} ({CopyItem.FormatSize(bytes)}) to {dest} in {vm.Name}.")
+                : (Severity.Error, "The copy failed: " + (lastTaskError ?? "unknown error."));
+            UpdateCopyForm();
+        }
+
+        /// <summary>Turns the task worker's "Copying 3 of 12: name" lines into the progress bar.</summary>
+        void ShowCopyProgress(string message)
+        {
+            if (!copying) return;
+            Match match = CopyProgressLine.Match(message);
+            if (!match.Success) return;
+            int index = int.Parse(match.Groups[1].Value), total = int.Parse(match.Groups[2].Value);
+            progressCopy.IsIndeterminate = total == 1;   // a single file has no steps to show
+            progressCopy.Maximum = total;
+            progressCopy.Value = index - 1;
+            SetCopyStatus(Severity.Busy, $"Copying {index} of {total}: {match.Groups[3].Value}");
+        }
+
         // ---- InfoBar ------------------------------------------------------------------
 
         enum Severity { Busy, Success, Error }
@@ -564,7 +755,17 @@ namespace VM_Manager
 
         void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (dialogOverlay.Visibility != Visibility.Visible) return;
+            if (dialogOverlay.Visibility != Visibility.Visible)
+            {
+                // Ctrl+V on the Copy files tab adds files copied in File Explorer (text boxes keep their own paste)
+                if (e.Key == Key.V && Keyboard.Modifiers == ModifierKeys.Control && tabs.SelectedItem == tabCopy &&
+                    Keyboard.FocusedElement is not TextBox && !copying)
+                {
+                    PasteFiles();
+                    e.Handled = true;
+                }
+                return;
+            }
             if (e.Key == Key.Escape) { CloseDialog(false); e.Handled = true; }
             else if (e.Key == Key.Enter) { CloseDialog(true); e.Handled = true; }
         }

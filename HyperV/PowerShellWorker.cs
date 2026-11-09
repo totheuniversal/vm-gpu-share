@@ -17,14 +17,25 @@ namespace VM_Manager.HyperV
 
         readonly Process process;
         readonly SemaphoreSlim gate = new(1, 1);
+        readonly Task libraryLoaded;
         TaskCompletionSource<string>? pending;
 
         public event Action<string>? Log;
 
+        const string EndOfLibrary = "#VM-GPU-SHARE-END-OF-LIBRARY#";
+
+        // The library is too big for a command line (32,767 characters at most), so this small
+        // loader goes on the command line and reads the library from stdin up to EndOfLibrary.
+        // Nothing is written to disk, so nothing can be swapped before the elevated process runs it.
+        const string Loader =
+            "[Console]::InputEncoding = [Text.UTF8Encoding]::new($false); $lib = [Text.StringBuilder]::new(); " +
+            "while ($null -ne ($line = [Console]::In.ReadLine()) -and $line -ne '" + EndOfLibrary + "') { [void]$lib.AppendLine($line) }; " +
+            ". ([scriptblock]::Create($lib.ToString()))";
+
         public PowerShellWorker()
         {
             string script = ReadResource("GpuLib.ps1") + Environment.NewLine + ReadResource("Worker.ps1");
-            string encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(script));
+            string encoded = Convert.ToBase64String(Encoding.Unicode.GetBytes(Loader));
             var psi = new ProcessStartInfo("powershell.exe",
                 "-NoProfile -NoLogo -NonInteractive -ExecutionPolicy Bypass -EncodedCommand " + encoded)
             {
@@ -42,6 +53,15 @@ namespace VM_Manager.HyperV
             process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) Log?.Invoke(e.Data); };
             process.BeginOutputReadLine();
             process.BeginErrorReadLine();
+            libraryLoaded = SendLibraryAsync(script.Replace("\r\n", "\n"));
+        }
+
+        // Without blocking the UI thread while powershell.exe starts and reads the pipe
+        async Task SendLibraryAsync(string script)
+        {
+            await process.StandardInput.WriteLineAsync(script);
+            await process.StandardInput.WriteLineAsync(EndOfLibrary);
+            await process.StandardInput.FlushAsync();
         }
 
         static string ReadResource(string name)
@@ -68,6 +88,7 @@ namespace VM_Manager.HyperV
             await gate.WaitAsync();
             try
             {
+                await libraryLoaded;
                 if (process.HasExited) throw new InvalidOperationException("PowerShell worker stopped.");
                 pending = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
                 string request = JsonSerializer.Serialize(new { script, args });
