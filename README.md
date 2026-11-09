@@ -90,6 +90,7 @@ When it's done, **Driver in VM** shows **Up to date**. ✅
 |---|---|
 | Start or stop the VM | Select it → **Start**, **Shut down** or **Restart** |
 | Work in the VM with the GPU | **Remote Desktop** button. This is the fast way, and 3D apps use the GPU. |
+| Choose which monitors Remote Desktop fills | **Remote Desktop screens**, under the buttons: click a screen to use it or not. The VM opens full screen on the chosen ones (they must sit next to each other). |
 | See the VM's basic window | **Console**. Good for setup, but it **doesn't show GPU acceleration**. |
 | Copy files from my PC into the VM | **Copy files** tab → see below |
 | Give the VM more or less GPU | Move the slider → **Apply GPU share** |
@@ -155,6 +156,16 @@ That's normal. Hyper-V's console window never uses the GPU. Connect with **Remot
 - The VM must be **running** and show an **IP address** in the app.
 - In the VM, turn on **Settings → System → Remote Desktop**. This needs Windows **Pro** in the VM.
 - Your Windows account in the VM must have a **password**.
+</details>
+
+<details>
+<summary><b>KeyShot, Blender or another GPU renderer says the GPU isn't supported (OptiX)</b></summary>
+
+GPU rendering in KeyShot, Blender (OptiX) and similar apps uses NVIDIA OptiX. In KeyShot's log this shows as `Optix error: 7804 (Library not found)`.
+
+Click **Update driver** for the VM. The app copies the OptiX files into the VM along with the driver (version 1.2.1 and later). Do it again after every NVIDIA driver update on your PC, so the OptiX files match the driver.
+
+KeyShot's warning `Failed to read file ... nvDrivers.json` is normal for a VM without internet and can be ignored.
 </details>
 
 <details>

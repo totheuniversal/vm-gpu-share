@@ -17,6 +17,8 @@ namespace VM_Manager
         public string? LastVm { get; set; }
         /// <summary>Folder inside the VM that the Copy files tab copies into.</summary>
         public string CopyDestination { get; set; } = @"C:\Users\SLW\Desktop\Share";
+        /// <summary>Monitors (\\.\DISPLAYn) Remote Desktop uses; null means all of them.</summary>
+        public List<string>? RdpScreens { get; set; }
         public double? Left { get; set; }
         public double? Top { get; set; }
         public double Width { get; set; } = 1180;

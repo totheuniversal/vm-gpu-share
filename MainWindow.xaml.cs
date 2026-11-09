@@ -31,6 +31,7 @@ namespace VM_Manager
         NewVmDefaults? newDefaults;
         TaskCompletionSource<bool>? dialogResult;
         readonly ObservableCollection<CopyItem> copyItems = new();
+        readonly ObservableCollection<ScreenChoice> screens = new();
         (Severity Kind, string Text)? copyResult;   // last copy's outcome, shown until the inputs change
         string? lastTaskError;
         bool busy;
@@ -44,6 +45,9 @@ namespace VM_Manager
             listVms.ItemsSource = vms;
             comboCopyVm.ItemsSource = vms;
             listCopyItems.ItemsSource = copyItems;
+            listScreens.ItemsSource = screens;
+            LoadScreens();
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
             refreshTimer.Tick += async (_, _) => { if (!busy) await RefreshVmsAsync(); };
             infoTimer.Tick += (_, _) => { infoTimer.Stop(); infoBar.Visibility = Visibility.Collapsed; };
             RestoreSettings();
@@ -144,6 +148,7 @@ namespace VM_Manager
 
         void Window_Closed(object? sender, EventArgs e)
         {
+            Microsoft.Win32.SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
             refreshTimer.Stop();
             refreshWorker?.Dispose();
             taskWorker?.Dispose();
@@ -216,6 +221,7 @@ namespace VM_Manager
             buttonConsole.IsEnabled = has;
             buttonCopyIp.IsEnabled = hasIp;
             buttonStream.IsEnabled = running && (StreamTarget() == StreamKind.VMStream || hasIp);
+            panelScreens.Visibility = StreamTarget() == StreamKind.RemoteDesktop && screens.Count > 1 ? Visibility.Visible : Visibility.Collapsed;
             buttonShareGpu.IsEnabled = has && free && hostGpu != null;
             buttonUpdateDriver.IsEnabled = buttonUpdateNow.IsEnabled = buttonRemoveGpu.IsEnabled = hasGpu && free;
             buttonRefresh.IsEnabled = free;
@@ -388,9 +394,105 @@ namespace VM_Manager
                     Process.Start(MoonlightPath, $"stream {vm.Ip} Desktop");
                     break;
                 default:
-                    Process.Start("mstsc.exe", $"/v:{vm.Ip}");
+                    StartRemoteDesktop(vm);
                     break;
             }
+        }
+
+        // ---- Remote Desktop screens -----------------------------------------------------
+
+        void LoadScreens()
+        {
+            List<ScreenInfo> all = Screens.GetAll();
+            List<string>? saved = settings.RdpScreens;
+            // A saved choice only counts while at least one of its monitors is still connected
+            bool useSaved = saved != null && all.Any(s => saved.Contains(s.Device, StringComparer.OrdinalIgnoreCase));
+            screens.Clear();
+            for (int i = 0; i < all.Count; i++)
+                screens.Add(new ScreenChoice(all[i], i + 1, !useSaved || saved!.Contains(all[i].Device, StringComparer.OrdinalIgnoreCase)));
+            ShowScreensNote();
+        }
+
+        void OnDisplaySettingsChanged(object? sender, EventArgs e) =>
+            Dispatcher.BeginInvoke(() => { LoadScreens(); UpdateDetails(); });
+
+        void ScreenToggle_Click(object sender, RoutedEventArgs e)
+        {
+            // At least one screen stays chosen
+            if (!screens.Any(s => s.Selected) && sender is System.Windows.Controls.Primitives.ToggleButton toggle)
+                toggle.IsChecked = true;
+            settings.RdpScreens = screens.All(s => s.Selected) ? null
+                : screens.Where(s => s.Selected).Select(s => s.Info.Device).ToList();
+            settings.Save();
+            ShowScreensNote();
+        }
+
+        // The VM's main screen: this PC's main screen if it's chosen, else the leftmost chosen one
+        static T MainScreen<T>(List<T> chosen, Func<T, ScreenInfo> info) where T : class =>
+            chosen.FirstOrDefault(c => info(c).Primary) ?? chosen[0];
+
+        void ShowScreensNote()
+        {
+            var chosen = screens.Where(s => s.Selected).ToList();
+            bool together = Screens.AreContiguous(chosen.Select(c => c.Info).ToList());
+            string numbers = chosen.Count == 1 ? $"{chosen[0].Number}"
+                : string.Join(", ", chosen.SkipLast(1).Select(c => c.Number)) + " and " + chosen[^1].Number;
+            textScreensNote.Text =
+                chosen.Count == 0 ? "" :
+                !together ? "Choose screens that sit next to each other: Remote Desktop can't skip a screen." :
+                chosen.Count == screens.Count ? $"Full screen on all {screens.Count} screens." :
+                chosen.Count == 1 ? $"Full screen on screen {numbers}." :
+                $"Full screen on screens {numbers}. Screen {MainScreen(chosen, c => c.Info).Number} is the VM's main screen.";
+            textScreensNote.SetResourceReference(ForegroundProperty, together ? "TextFillColorSecondaryBrush" : "SystemFillColorCriticalBrush");
+        }
+
+        /// <summary>Opens Remote Desktop full screen on the chosen monitors. The app writes its own
+        /// .rdp file, so Remote Desktop rewriting its Default.rdp can't change the choice.</summary>
+        void StartRemoteDesktop(VmInfo vm)
+        {
+            var chosen = screens.Where(s => s.Selected).Select(s => s.Info).ToList();
+            if (!Screens.AreContiguous(chosen))
+            {
+                ShowInfo(Severity.Error, "Choose other screens.", "Remote Desktop can only use screens that sit next to each other.");
+                return;
+            }
+            var lines = new List<string>
+            {
+                "full address:s:" + vm.Ip,
+                "screen mode id:i:2",
+                "use multimon:i:" + (screens.Count > 1 ? 1 : 0),
+                "dynamic resolution:i:1",
+                "session bpp:i:32",
+                "connection type:i:6",
+                "networkautodetect:i:0",
+                "bandwidthautodetect:i:1",
+                "compression:i:0",
+                "allow desktop composition:i:1",
+                "allow font smoothing:i:1",
+                "videoplaybackmode:i:1",
+                "audiomode:i:0",
+                "redirectclipboard:i:1",
+                "redirectprinters:i:0",
+                "redirectdrives:i:0",
+                "authentication level:i:2",
+                "autoreconnection enabled:i:1",
+                "displayconnectionbar:i:1",
+            };
+            if (screens.Count > 1 && chosen.Count > 0 && chosen.Count < screens.Count)
+            {
+                // The first ID listed becomes the VM's main screen
+                ScreenInfo main = MainScreen(chosen, s => s);
+                lines.Add("selectedmonitors:s:" + string.Join(",", chosen.OrderBy(s => s != main).Select(s => s.RdpId)));
+            }
+
+            string folder = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                                                   "VM GPU Share", "Remote Desktop");
+            Directory.CreateDirectory(folder);
+            char[] invalid = System.IO.Path.GetInvalidFileNameChars();
+            string file = System.IO.Path.Combine(folder, string.Concat(vm.Name.Select(c => invalid.Contains(c) ? '_' : c)) + ".rdp");
+            File.WriteAllLines(file, lines, System.Text.Encoding.Unicode);
+            WriteLog($"Remote Desktop to {vm.Ip}: " + (lines.FirstOrDefault(l => l.StartsWith("selectedmonitors")) ?? "all screens"));
+            Process.Start("mstsc.exe", $"\"{file}\"");
         }
 
         void buttonCopyIp_Click(object sender, RoutedEventArgs e)

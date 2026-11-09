@@ -268,6 +268,42 @@
                                         </StackPanel>
                                     </Button>
                                 </WrapPanel>
+
+                                <!-- Which of this PC's monitors Remote Desktop fills (shown when there is more than one) -->
+                                <StackPanel x:Name="panelScreens">
+                                    <Rectangle Height="1" Margin="0,8,0,14" Fill="{DynamicResource DividerStrokeColorDefaultBrush}" />
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="230" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                            <TextBlock Style="{StaticResource BodyStrongText}" Text="Remote Desktop screens" />
+                                            <TextBlock x:Name="textScreensNote" Style="{StaticResource CaptionText}" TextWrapping="Wrap" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                        <ItemsControl x:Name="listScreens" Grid.Column="1" VerticalAlignment="Center" Focusable="False">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ToggleButton IsChecked="{Binding Selected, Mode=TwoWay}" Padding="12,6" Margin="0,4,8,4" MinWidth="150"
+                                                                  HorizontalContentAlignment="Left" ToolTip="{Binding ToolTip}" Click="ScreenToggle_Click">
+                                                        <StackPanel Orientation="Horizontal">
+                                                            <TextBlock Style="{StaticResource Icon}" Text="&#xE7F4;" FontSize="18" Margin="0,0,10,0" />
+                                                            <StackPanel>
+                                                                <TextBlock Text="{Binding Title}" FontWeight="SemiBold" />
+                                                                <TextBlock Text="{Binding Detail}" FontSize="12" Opacity="0.8" />
+                                                            </StackPanel>
+                                                        </StackPanel>
+                                                    </ToggleButton>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </Grid>
+                                </StackPanel>
                             </StackPanel>
                         </Border>
 

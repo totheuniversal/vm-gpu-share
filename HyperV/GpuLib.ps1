@@ -75,6 +75,14 @@ function Copy-GpuDriver($vm) {
         Get-ChildItem C:\Windows\System32 -Filter 'nv*' -File | ForEach-Object {
             Copy-Item $_.FullName "$root\Windows\System32\" -Force -ErrorAction SilentlyContinue
         }
+        # OptiX (GPU rendering in KeyShot, Blender, ...) can't find nvoptix.dll in the driver folder
+        # inside a VM ("Optix error 7804: Library not found"), so put it in System32 too. It is
+        # re-copied with every driver update: an older copy than the driver breaks OptiX (error 7801).
+        Log 'Copying OptiX files...'
+        foreach ($f in 'nvoptix.dll', 'nvoptix.bin', 'nvrtum64.dll') {
+            $src = Join-Path $nv.DriverDir $f
+            if (Test-Path $src) { Copy-Item $src "$root\Windows\System32\" -Force }
+        }
     }
     finally { Dismount-VHD -Path $vhd }
     Set-VMDriverFolder (Get-VM -Id $vm.Id) $nv.Folder
